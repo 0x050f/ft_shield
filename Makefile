@@ -14,7 +14,8 @@ DIR_SRCS		=	./srcs/
 DIR_OBJS		=	./compiled_srcs/
 
 # FILES #
-SRCS			=	ft_shield.c
+SRCS			=	ft_shield.c \
+					sha512.c
 
 INCLUDES		=	ft_shield.h
 
