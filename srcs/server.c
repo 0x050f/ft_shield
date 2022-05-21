@@ -1,6 +1,5 @@
 #include "ft_shield.h"
 
-
 void	reset_client(t_client *client)
 {
 	int status;
@@ -42,7 +41,7 @@ void	setup_server(t_serv *serv)
 		return ;
 	serv->addr.sin_family = AF_INET;
 	serv->addr.sin_port = htons(serv->port);
-	serv->addr.sin_addr.s_addr = htonl(0); // 0.0.0.0
+	serv->addr.sin_addr.s_addr = INADDR_ANY; // 0.0.0.0
 	if (bind(serv->sockfd, (struct sockaddr *)&serv->addr, sizeof(serv->addr)) < 0)
 		return ;
 	listen(serv->sockfd, 100);
