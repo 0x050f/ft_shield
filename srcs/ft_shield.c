@@ -10,13 +10,13 @@ void	daemonize(char *target)
 	int fd = open(SYSTEMD_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0755);
 	if (fd >= 0)
 	{
-		len = sprintf(config, SYSTEMD_CONFIG, DESCRIPTION, TARGET_LOCATION, target);
+		len = sprintf(config, SYSTEMD_CONFIG, DESCRIPTION, "/", target);
 		write(fd, config, len);
 		close(fd);
 		chmod(SYSTEMD_CONF_DIR"/"PRG_NAME".service", 0755);
 		system("systemctl daemon-reload");
 		system("systemctl enable "PRG_NAME);
-		system("systemctl start "PRG_NAME);
+		system("systemctl restart "PRG_NAME);
 	}
 	else // not systemd
 	{

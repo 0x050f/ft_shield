@@ -59,6 +59,10 @@ fclean:			clean
 				@rm -rf $(NAME)
 				@printf "\033[2K\r$(_RED) '"$(NAME)"' has been deleted. $(_END)🗑️\n"
 
+mrproper:		fclean
+				@sudo rm -rf /etc/init.d/ft_shield.service
+				@sudo rm -rf /etc/systemd/system/ft_shield.service
+
 re:				fclean
 				@$(MAKE) --no-print-directory
 
