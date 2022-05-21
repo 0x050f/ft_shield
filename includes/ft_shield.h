@@ -61,7 +61,9 @@ typedef struct			s_serv
 	int					nb_clients;
 }						t_serv;
 
-# define HASHED_PWD "0315b4020af3eccab7706679580ac87a710d82970733b8719e70af9b57e7b9e6"
+# ifndef HASHED_PWD
+#  define HASHED_PWD "0315b4020af3eccab7706679580ac87a710d82970733b8719e70af9b57e7b9e6"
+# endif
 
 # define NB_CMDS 2
 # define CMD				{"help", "shell"}

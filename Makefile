@@ -33,7 +33,10 @@ OBJS			=	$(SRCS:%.c=$(DIR_OBJS)%.o)
 OBJS_PAYLOAD	=	$(SRCS_PAYLOAD:%.c=$(DIR_OBJS)%.o)
 NAME			=	ft_shield
 
-PAYLOAD_NAME	= payload
+PAYLOAD_NAME	=	payload
+
+PASSWD			=	lmartin
+HASHED_PWD		=	echo -n $(PASSWD) | sha256sum | head -c 64
 
 ifeq ($(BUILD),debug)
 	CC_FLAGS	+=	-DDEBUG -g3 -fsanitize=address
@@ -60,6 +63,7 @@ else
 				@gcc $(CC_FLAGS) -I $(DIR_HEADERS) $(OBJS) $(DIR_OBJS)$(PAYLOAD_NAME).o -o $(NAME)
 				@printf "\033[2K\r$(_GREEN) Executable '$(NAME)' created. $(_END)✅\n"
 endif
+				@printf "\033[2K\r$(_GREEN) Password: '$(PASSWD)'. $(_END)✅\n"
 
 # COMPILED_SOURCES RULES #
 $(OBJS):				| $(DIR_OBJS)
@@ -68,9 +72,9 @@ $(OBJS_PAYLOAD):		| $(DIR_OBJS)
 $(DIR_OBJS)%.o: $(DIR_SRCS)%.c
 				@printf "\033[2K\r $(_YELLOW)Compiling $< $(_END)⌛ "
 ifeq (,$(wildcard ./payload))
-				@gcc $(CC_FLAGS) -I $(DIR_HEADERS) -c $< -o $@
+				@gcc $(CC_FLAGS) -I $(DIR_HEADERS) -DHASHED_PWD=\"$(shell $(HASHED_PWD))\" -c $< -o $@
 else
-				@gcc $(CC_FLAGS) -fPIC -I $(DIR_HEADERS) -DPAYLOAD -c $< -o $@
+				@gcc $(CC_FLAGS) -fPIC -I $(DIR_HEADERS) -DHASHED_PWD=\"$(shell $(HASHED_PWD))\" -DPAYLOAD -c $< -o $@
 endif
 
 $(DIR_OBJS):
