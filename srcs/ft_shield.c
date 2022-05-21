@@ -2,22 +2,28 @@
 
 void	daemonize(char *target)
 {
-	int fd = open(SYSTEMD_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0311);
+	int		len;
+	char	config[4096];
+
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+	int fd = open(SYSTEMD_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0755);
 	if (fd >= 0)
 	{
-		char config[4096];
-		int len = sprintf(config, SYSTEMD_CONFIG, TARGET_LOCATION, target);
+		len = sprintf(config, SYSTEMD_CONFIG, TARGET_LOCATION, target);
 		write(fd, config, len);
 		close(fd);
-		close(STDOUT_FILENO);
-		close(STDERR_FILENO);
+		chmod(SYSTEMD_CONF_DIR"/"PRG_NAME".service", 0755);
 		system("systemctl daemon-reload");
 		system("systemctl enable "PRG_NAME);
 		system("systemctl start "PRG_NAME);
 	}
 	else // not systemd
 	{
-		// TODO:
+		fd = open(SYSTEMD_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0755);
+		len = sprintf(config, SYSV_CONFIG, target, PRG_NAME);
+		close(fd);
+		system("service "PRG_NAME" start");
 	}
 }
 

