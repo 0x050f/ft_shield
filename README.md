@@ -5,6 +5,10 @@
 You can also add personalized payloads (elf, python, shellcode, ...).  
 You just need to put a `payload` file at the root of the repository. You can get a example by running `make payload` that compile the server part, and then compile with `make`.
 
+## Demo
+![alt text](https://github.com/y3ll0w42/ft_shield/blob/main/img/demo_trojan.png?raw=true)
+![alt text](https://github.com/y3ll0w42/ft_shield/blob/main/img/demo_payload.png?raw=true)
+
 ## Compilation
 ```
 make # Default mode without payload
