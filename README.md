@@ -1,10 +1,14 @@
 # ft_shield
 
-`ft_shield` is a simple trojan horse that copy itself into `/bin` when launching as root (after a beautiful print of my 42 login `lmartin`) then add the created program as a service and launch it. If the binary is in `/bin` (like the new created program), it will open the port 4242 and ask for a password (`4242` here). If the password is correct the user access to a little program shell that can allow him to launch a real shell on the target machine.
+`ft_shield` is a simple trojan horse that copy itself into `/bin` when launching as root then add the created program as a service and launch it. If the binary is in `/bin` (like the new created program), it will open the port 4242 and ask for a password (Default password is given during compilation, you can modify the variable PASSWD in makefile to set your own). If the password is correct the user access to a little program shell that can allow him to launch a real shell on the target machine.
+
+You can also add personalized payloads (elf, python, shellcode, ...).  
+You just need to put a `payload` file at the root of the repository. You can get a example by running `make payload` that compile the server part, and then compile with `make`.
 
 ## Compilation
 ```
-make
+make # Default mode without payload
+make re # Compile with a payload server (like make but for the payload demo)
 ```
 
 ## Usage
