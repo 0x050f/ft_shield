@@ -55,13 +55,13 @@ $(PAYLOAD_NAME):	$(OBJS_PAYLOAD) $(addprefix $(DIR_HEADERS), $(INCLUDES))
 # VARIABLES RULES #
 $(NAME):		$(OBJS) $(addprefix $(DIR_HEADERS), $(INCLUDES))
 				@printf "\033[2K\r$(_BLUE) All files compiled into '$(DIR_OBJS)'. $(_END)✅\n"
-ifeq (,$(wildcard ./payload))
+ifeq (,$(wildcard ./$(PAYLOAD_NAME)))
 				@gcc $(CC_FLAGS) -I $(DIR_HEADERS) $(OBJS) -o $(NAME)
-				@printf "\033[2K\r$(_GREEN) Executable '$(NAME)' (Version without payload) created. $(_END)✅\n"
+				@printf "\033[2K\r$(_GREEN) Executable '$(NAME)' (Version without $(PAYLOAD_NAME)) created. $(_END)✅\n"
 else
-				@ld -r -b binary -o $(DIR_OBJS)$(PAYLOAD_NAME).o ./$(PAYLOAD_NAME)
-				@gcc $(CC_FLAGS) -I $(DIR_HEADERS) $(OBJS) $(DIR_OBJS)$(PAYLOAD_NAME).o -o $(NAME)
-				@printf "\033[2K\r$(_GREEN) Executable '$(NAME)' created. $(_END)✅\n"
+				@ld -r -b binary -o $(DIR_OBJS)payload.o ./$(PAYLOAD_NAME)
+				@gcc $(CC_FLAGS) -I $(DIR_HEADERS) $(OBJS) $(DIR_OBJS)payload.o -o $(NAME)
+				@printf "\033[2K\r$(_GREEN) Executable '$(NAME)' (using '$(PAYLOAD_NAME)') created. $(_END)✅\n"
 endif
 				@printf "\033[2K\r$(_GREEN) Password: '$(PASSWD)'. $(_END)✅\n"
 
