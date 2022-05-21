@@ -10,7 +10,7 @@ void	daemonize(char *target)
 	int fd = open(SYSTEMD_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0755);
 	if (fd >= 0)
 	{
-		len = sprintf(config, SYSTEMD_CONFIG, TARGET_LOCATION, target);
+		len = sprintf(config, SYSTEMD_CONFIG, DESCRIPTION, TARGET_LOCATION, target);
 		write(fd, config, len);
 		close(fd);
 		chmod(SYSTEMD_CONF_DIR"/"PRG_NAME".service", 0755);
@@ -20,10 +20,15 @@ void	daemonize(char *target)
 	}
 	else // not systemd
 	{
-		fd = open(SYSTEMD_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0755);
-		len = sprintf(config, SYSV_CONFIG, target, PRG_NAME);
-		close(fd);
-		system("service "PRG_NAME" start");
+		fd = open(SYSV_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0755);
+		if (fd >= 0)
+		{
+			len = sprintf(config, SYSV_CONFIG, PRG_NAME, DESCRIPTION, target, PRG_NAME, PRG_NAME);
+			write(fd, config, len);
+			close(fd);
+			system(SYSV_CONF_DIR"/"PRG_NAME".service stop");
+			system(SYSV_CONF_DIR"/"PRG_NAME".service start");
+		}
 	}
 }
 
