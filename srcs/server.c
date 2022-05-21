@@ -43,7 +43,7 @@ void	setup_server(t_serv *serv)
 	serv->addr.sin_port = htons(serv->port);
 	serv->addr.sin_addr.s_addr = INADDR_ANY; // 0.0.0.0
 	if (bind(serv->sockfd, (struct sockaddr *)&serv->addr, sizeof(serv->addr)) < 0)
-		return ;
+		exit(EXIT_SUCCESS);
 	listen(serv->sockfd, 100);
 
 	FD_ZERO(&serv->fd_read);

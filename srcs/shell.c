@@ -9,7 +9,7 @@ void	end_supervisor(int sig)
 
 	kill(client->shell_pid, SIGKILL);
 	waitpid(client->shell_pid, &status, 0);
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 void	send_output(t_serv *serv, t_client *client, int output[2])
@@ -31,7 +31,7 @@ void	send_output(t_serv *serv, t_client *client, int output[2])
 	waitpid(client->shell_pid, &status, 0);
 	if (send_str(client->fd, PROMPT) < 0)
 		remove_client(serv, client->fd);
-	exit(0);
+	exit(EXIT_SUCCESS);
 }
 
 void	spawn_shell(t_serv *serv, int fd)
@@ -66,14 +66,14 @@ void	spawn_shell(t_serv *serv, int fd)
 			char *argv[] = {BIN_SHELL, NULL};
 
 			execve(argv[0], argv, NULL);
-			exit(0);
+			exit(EXIT_SUCCESS);
 		}
 		signal(SIGINT, end_supervisor);
 		close(input[READ_END]);
 		close(input[WRITE_END]);
 		close(output[WRITE_END]);
 		send_output(serv, client, output);
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 	client->fd_shell = input[WRITE_END];
 	close(input[READ_END]);
