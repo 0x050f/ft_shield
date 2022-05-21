@@ -2,23 +2,20 @@
 
 t_client	*client = NULL;
 
-void	output_killed(int sig)
+void	end_supervisor(int sig)
 {
 	(void)sig;
 	int status;
 
 	kill(client->shell_pid, SIGKILL);
 	waitpid(client->shell_pid, &status, 0);
-	if (send_str(client->fd, PROMPT) < 0)
-		remove_client(&serv, client->fd);
 	exit(0);
 }
 
 void	send_output(t_serv *serv, t_client *client, int output[2])
 {
-	int		status;
 	char	*buffer[BUFFER_SIZE];
-	int		ret = 0;
+	int		ret;
 
 	while ((ret = read(output[READ_END], buffer, BUFFER_SIZE)) > 0)
 	{
@@ -28,9 +25,10 @@ void	send_output(t_serv *serv, t_client *client, int output[2])
 			break ;
 		}
 	}
+	int status;
+
 	kill(client->shell_pid, SIGKILL);
 	waitpid(client->shell_pid, &status, 0);
-	close(output[READ_END]);
 	if (send_str(client->fd, PROMPT) < 0)
 		remove_client(serv, client->fd);
 	exit(0);
@@ -49,15 +47,16 @@ void	spawn_shell(t_serv *serv, int fd)
 	if (!client)
 		return ;
 	int			input[2];
+
 	pipe(input);
 	client->output_pid = fork();
-	if (!client->output_pid)
+	if (!client->output_pid) // supervisor & piped ouput
 	{
 		int			output[2];
 
 		pipe(output);
 		client->shell_pid = fork();
-		if (!client->shell_pid)
+		if (!client->shell_pid) // shell
 		{
 			close(input[WRITE_END]);
 			close(output[READ_END]);
@@ -69,7 +68,7 @@ void	spawn_shell(t_serv *serv, int fd)
 			execve(argv[0], argv, NULL);
 			exit(0);
 		}
-		signal(SIGINT, output_killed);
+		signal(SIGINT, end_supervisor);
 		close(input[READ_END]);
 		close(input[WRITE_END]);
 		close(output[WRITE_END]);

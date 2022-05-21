@@ -44,6 +44,6 @@ int		main(void)
 		/* TODO: add as daemon */
 	}
 	else
-		backdoor();
+		server();
 	return (EXIT_SUCCESS);
 }
