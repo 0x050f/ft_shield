@@ -24,7 +24,7 @@
 # define PROC_SELF_EXE "/proc/self/exe"
 
 # ifdef PAYLOAD
-#  define SNEAKY_FILE "libshield.so"
+#  define SNEAKY_FILE "[system_shield]"
 # endif
 
 # define PROMPT "$> "

